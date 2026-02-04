@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { CHRIST_SOURCES, fetchSourceText } from "@/lib/christ-sources";
 import { searchMockFaqs, rankMockFaqs } from "@/lib/mock-faqs";
+import { getUserDataContext, USER_DATA_SOURCE_LABEL } from "@/lib/user-data";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
@@ -46,6 +47,8 @@ export async function POST(request: Request) {
       .filter((item) => item.text.length > 0)
       .slice(0, 5);
 
+    const userDataContext = getUserDataContext(question);
+
     const mockContextItems = rankMockFaqs(question, 5)
       .map(
         (item, idx) =>
@@ -60,7 +63,7 @@ export async function POST(request: Request) {
       )
       .join("\n\n");
 
-    const prompt = `You are a Christ University FAQ assistant. Use the provided official sources first. If they do not contain the answer, you may use the mock FAQ snippets as a fallback. Provide a detailed, structured response with bullet points or short sections when helpful. If the answer isn't in sources or mock FAQs, say you don't have the official information and suggest contacting the relevant office.\n\nOfficial Sources:\n${context || "No sources available."}\n\nMock FAQs:\n${mockContextItems || "No mock FAQs available."}\n\nQuestion: ${question}`;
+    const prompt = `You are a Christ University FAQ assistant. Use the provided official sources first. If they do not contain the answer, you may use the user-provided dataset. If still unavailable, you may use the mock FAQ snippets as a fallback. Provide a detailed, structured response with short sentences.\n\nRules:\n- Output plain text only. Do not use Markdown, bullets, or formatting symbols.\n- Only claim a detail is in official sources if it is explicitly present in the source text.\n- If the sources do NOT mention the requested detail, say it is not available in the provided sources.\n- Do NOT refer to sources by numbers (e.g., “Source 1”).\n- If the answer isn't in sources, user data, or mock FAQs, say you don't have the official information and suggest contacting the relevant office.\n\nOfficial Sources:\n${context || "No sources available."}\n\nUser Data:\n${userDataContext || "No user data available."}\n\nMock FAQs:\n${mockContextItems || "No mock FAQs available."}\n\nQuestion: ${question}`;
 
     const result = await model.generateContent(prompt);
     const response = result.response;
@@ -68,10 +71,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       answer: text,
-      sources: [
-        ...sourceTexts.map((item) => item.url),
-        ...(mockContextItems ? ["Mock FAQ Dataset"] : []),
-      ],
     });
   } catch (error) {
     const message =

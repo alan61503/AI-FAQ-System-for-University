@@ -7,14 +7,12 @@ import { Button, Typography, Input } from "@material-tailwind/react";
 function Hero() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [sources, setSources] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleAsk = async () => {
     setError("");
     setAnswer("");
-    setSources([]);
     if (!question.trim()) {
       setError("Please enter a question.");
       return;
@@ -31,7 +29,6 @@ function Hero() {
         setError(data?.error || "Something went wrong.");
       } else {
         setAnswer(data?.answer || "");
-        setSources(Array.isArray(data?.sources) ? data.sources : []);
       }
     } catch {
       setError("Network error. Please try again.");
@@ -97,25 +94,14 @@ function Hero() {
             <Typography variant="small" className="mb-2 font-semibold text-gray-800 dark:text-gray-100">
               Answer
             </Typography>
-            <Typography className="!text-gray-700 dark:!text-gray-200" variant="paragraph">
-              {answer}
+            <Typography
+              className="!text-gray-700 dark:!text-gray-200 whitespace-pre-line"
+              variant="paragraph"
+            >
+              {answer
+                .replace(/\*\*/g, "")
+                .replace(/^\s*[-*]\s+/gm, "• ")}
             </Typography>
-            {sources.length > 0 ? (
-              <div className="mt-4">
-                <Typography variant="small" className="mb-2 font-semibold text-gray-800 dark:text-gray-100">
-                  Sources
-                </Typography>
-                <ul className="list-disc pl-5">
-                  {sources.map((url) => (
-                    <li key={url} className="text-sm text-gray-600 dark:text-gray-300">
-                      <a href={url} target="_blank" className="underline">
-                        {url}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </div>
         ) : null}
           </div>
