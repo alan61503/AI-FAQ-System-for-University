@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { CHRIST_SOURCES, fetchSourceText } from "@/lib/christ-sources";
+import { getRankedSourceChunks } from "@/lib/christ-sources";
 import { searchMockFaqs, rankMockFaqs } from "@/lib/mock-faqs";
 import { getUserDataContext, USER_DATA_SOURCE_LABEL } from "@/lib/user-data";
 
@@ -18,36 +18,8 @@ type FaqResponse = {
   sources: string[];
 };
 
-const normalize = (text: string) =>
-  text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
-
 const clampConfidence = (value: number) =>
   Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.4;
-
-const buildSourceLabel = (url: string) => {
-  try {
-    const { hostname, pathname } = new URL(url);
-    const cleanPath = pathname.replace(/^\/+|\/+$/g, "");
-    return cleanPath ? `${hostname}/${cleanPath}` : hostname;
-  } catch {
-    return url;
-  }
-};
-
-const scoreTextMatch = (query: string, text: string) => {
-  const q = normalize(query);
-  const hay = normalize(text);
-  if (!q || !hay) return 0;
-
-  const tokens = q.split(" ").filter((token) => token.length > 2);
-  if (tokens.length === 0) return 0;
-
-  let score = 0;
-  for (const token of tokens) {
-    if (hay.includes(token)) score += 1;
-  }
-  return score;
-};
 
 const parseModelJson = (raw: string) => {
   const match = raw.match(/\{[\s\S]*\}/);
@@ -123,29 +95,19 @@ export async function POST(request: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "models/gemini-2.5-flash" });
 
-    const sourceResults = await Promise.allSettled(
-      CHRIST_SOURCES.map((url) => fetchSourceText(url))
-    );
-    const sourceTexts = sourceResults
-      .map((result, index) => ({
-        url: CHRIST_SOURCES[index],
-        text: result.status === "fulfilled" ? result.value : "",
-      }))
-      .filter((item) => item.text.length > 0)
-      .slice(0, 5);
+    const rankedSourceChunks = await getRankedSourceChunks(question, 8);
 
-    const rankedOfficialCitations = sourceTexts
-      .map((item) => ({
-        ...item,
-        score: scoreTextMatch(question, `${item.url} ${item.text.slice(0, 6000)}`),
-      }))
-      .filter((item) => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .map((item) => ({
-        label: buildSourceLabel(item.url),
-        url: item.url,
-      }));
+    const rankedOfficialCitations = Array.from(
+      new Map(
+        rankedSourceChunks.map((item) => [
+          item.url,
+          {
+            label: item.label,
+            url: item.url,
+          },
+        ])
+      ).values()
+    ).slice(0, 3);
 
     const userDataContext = getUserDataContext(question);
 
@@ -156,14 +118,18 @@ export async function POST(request: Request) {
       )
       .join("\n\n");
 
-    const context = sourceTexts
+    const context = rankedSourceChunks
       .map(
         (item, idx) =>
-          `Source ${idx + 1} (${item.url}):\n${item.text.slice(0, 4000)}`
+          `Source ${idx + 1} (${item.url}) [score=${item.score}]:\n${item.chunk}`
       )
       .join("\n\n");
 
-    const prompt = `You are a Christ University FAQ assistant. Use the provided official sources first. If they do not contain the answer, you may use the user-provided dataset. If still unavailable, you may use the mock FAQ snippets as a fallback.\n\nRules:\n- Return only valid JSON (no markdown, no extra text).\n- JSON shape: {"answer": string, "confidence": number, "citations": Array<{"label": string, "url"?: string}>}.\n- confidence must be a number between 0 and 1.\n- Keep answer concise, accurate, and in plain text.\n- Only claim a detail is in official sources if explicitly present in source text.\n- If data is missing, clearly say it is not available in the provided sources and suggest contacting the relevant office.\n\nCandidate official citation URLs:\n${sourceTexts.map((item) => item.url).join("\n") || "No official URLs available."}\n\nOfficial Sources:\n${context || "No sources available."}\n\nUser Data:\n${userDataContext || "No user data available."}\n\nMock FAQs:\n${mockContextItems || "No mock FAQs available."}\n\nQuestion: ${question}`;
+    const candidateOfficialUrls = rankedOfficialCitations
+      .map((item) => item.url)
+      .filter((url): url is string => Boolean(url));
+
+    const prompt = `You are a Christ University FAQ assistant. Use the provided official sources first. If they do not contain the answer, you may use the user-provided dataset. If still unavailable, you may use the mock FAQ snippets as a fallback.\n\nRules:\n- Return only valid JSON (no markdown, no extra text).\n- JSON shape: {"answer": string, "confidence": number, "citations": Array<{"label": string, "url"?: string}>}.\n- confidence must be a number between 0 and 1.\n- Keep answer concise, accurate, and in plain text.\n- Only claim a detail is in official sources if explicitly present in source text.\n- If data is missing, clearly say it is not available in the provided sources and suggest contacting the relevant office.\n\nCandidate official citation URLs:\n${candidateOfficialUrls.join("\n") || "No official URLs available."}\n\nOfficial Sources:\n${context || "No sources available."}\n\nUser Data:\n${userDataContext || "No user data available."}\n\nMock FAQs:\n${mockContextItems || "No mock FAQs available."}\n\nQuestion: ${question}`;
 
     const result = await model.generateContent(prompt);
     const response = result.response;
