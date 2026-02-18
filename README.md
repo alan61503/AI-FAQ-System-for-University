@@ -38,7 +38,7 @@ src/
 	components/
 	lib/
 		christ-sources.ts        # Source scraping + cache + ranking
-		mock-faqs.ts             # Mock fallback data
+		internal-kb.ts           # Internal fallback knowledge data
 		user-data.ts             # User-provided context matcher
 data/
 	feedback.jsonl             # Feedback storage (generated at runtime)
@@ -120,7 +120,7 @@ Response shape:
 When debug is enabled, response also contains:
 
 - `debug.scraperCache` (`ttlMs`, `cachedEntries`, `inflightRequests`)
-- `debug.retrieval` (`officialChunkCount`, `officialCitationCount`, `usedMockFallback`, `usedUserData`)
+- `debug.retrieval` (`officialChunkCount`, `officialCitationCount`, `usedInternalFallback`, `usedUserData`)
 
 ### `POST /api/feedback`
 
@@ -156,11 +156,11 @@ Lists available models from Gemini API.
 ## Retrieval + Generation Flow
 
 1. Accept question
-2. Check mock quick-hit fallback
+2. Check internal knowledge quick-hit fallback
 3. Fetch official source pages (with cache)
 4. Clean HTML and remove noisy content
 5. Split content into chunks and rank by query relevance
-6. Build LLM prompt from ranked chunks + optional user dataset + mock snippets
+6. Build LLM prompt from ranked chunks + optional user dataset + internal knowledge snippets
 7. Parse model JSON response and return answer + citations + confidence
 
 ## Feedback & Analytics
