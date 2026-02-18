@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getRankedSourceChunks } from "@/lib/christ-sources";
+import {
+  getRankedSourceChunks,
+  getSourceCacheDiagnostics,
+} from "@/lib/christ-sources";
 import { searchMockFaqs, rankMockFaqs } from "@/lib/mock-faqs";
 import { getUserDataContext, USER_DATA_SOURCE_LABEL } from "@/lib/user-data";
 
 const apiKey = process.env.GEMINI_API_KEY;
+const debugFromEnv = process.env.DEBUG === "true";
+
+const isTruthyDebugParam = (value: string | null) => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(normalized);
+};
 
 type Citation = {
   label: string;
@@ -63,6 +73,10 @@ const parseModelJson = (raw: string) => {
 };
 
 export async function POST(request: Request) {
+  const requestUrl = new URL(request.url);
+  const debugEnabled =
+    debugFromEnv || isTruthyDebugParam(requestUrl.searchParams.get("debug"));
+
   if (!apiKey) {
     return NextResponse.json(
       { error: "GEMINI_API_KEY is not set." },
@@ -83,12 +97,26 @@ export async function POST(request: Request) {
   const mockHit = searchMockFaqs(question);
   if (mockHit) {
     const citations: Citation[] = [{ label: "Mock FAQ Dataset" }];
-    return NextResponse.json({
+    const payload: Record<string, unknown> = {
       answer: mockHit.answer,
       confidence: 0.55,
       citations,
       sources: citations.map((item) => item.label),
-    });
+    };
+
+    if (debugEnabled) {
+      payload.debug = {
+        scraperCache: getSourceCacheDiagnostics(),
+        retrieval: {
+          officialChunkCount: 0,
+          officialCitationCount: 0,
+          usedMockFallback: true,
+          usedUserData: false,
+        },
+      };
+    }
+
+    return NextResponse.json(payload);
   }
 
   try {
@@ -164,7 +192,23 @@ export async function POST(request: Request) {
 
     payload.sources = payload.citations.map((item) => item.label);
 
-    return NextResponse.json(payload);
+    const responsePayload: Record<string, unknown> = { ...payload };
+
+    if (debugEnabled) {
+      responsePayload.debug = {
+        scraperCache: getSourceCacheDiagnostics(),
+        retrieval: {
+          officialChunkCount: rankedSourceChunks.length,
+          officialCitationCount: rankedOfficialCitations.length,
+          usedMockFallback: fallbackCitations.some(
+            (item) => item.label === "Mock FAQ Dataset"
+          ),
+          usedUserData: Boolean(userDataContext),
+        },
+      };
+    }
+
+    return NextResponse.json(responsePayload);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to generate response.";

@@ -19,7 +19,7 @@ const ARTICLES = [
 export function Articles() {
   return (
     <section id="how-it-works" className="section-pad">
-      <div className="container mx-auto max-w-6xl py-12">
+      <div className="container mx-auto max-w-6xl rounded-3xl border border-gray-200 bg-white px-6 py-12 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:px-8">
         <div className="max-w-3xl">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             How the AI FAQ works

@@ -62,7 +62,8 @@ const POSTS = [
 export function Posts() {
   return (
     <section id="categories" className="section-pad">
-      <div className="container mx-auto max-w-6xl text-center pt-12 pb-6">
+      <div className="container mx-auto max-w-6xl rounded-3xl border border-gray-200 bg-white px-6 pt-12 pb-8 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:px-8">
+        <div className="text-center">
         <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
           Explore FAQ Categories
         </h3>
@@ -73,20 +74,28 @@ export function Posts() {
           Browse curated knowledge areas or ask the AI directly. Each category
           is kept up to date by university offices.
         </p>
-      </div>
-      <div className="container mx-auto grid grid-cols-1 gap-6 pb-12 lg:grid-cols-3">
-        {POSTS.map(({ tag, title, desc, date, author }) => (
-          <BlogPostCard
-            key={title}
-            tag={tag}
-            title={title}
-            desc={desc}
-            date={date}
-            author={{
-              name: author.name,
-            }}
+        <div className="mx-auto mb-10 max-w-xl rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+          <img
+            src="/image/illustrations/undraw_too-many-options_lpt0.svg"
+            alt="FAQ categories"
+            className="h-auto w-full"
           />
-        ))}
+        </div>
+        </div>
+        <div className="grid grid-cols-1 gap-6 pb-4 lg:grid-cols-3">
+          {POSTS.map(({ tag, title, desc, date, author }) => (
+            <BlogPostCard
+              key={title}
+              tag={tag}
+              title={title}
+              desc={desc}
+              date={date}
+              author={{
+                name: author.name,
+              }}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

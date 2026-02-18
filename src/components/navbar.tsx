@@ -1,4 +1,6 @@
 import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Navbar as MTNavbarBase,
   Collapse as CollapseBase,
@@ -13,27 +15,33 @@ const Button = ButtonBase as any;
 const IconButton = IconButtonBase as any;
 
 const NAV_MENU = [
-  { name: "Home", href: "#home" },
-  { name: "Categories", href: "#categories" },
-  { name: "How it works", href: "#how-it-works" },
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
+  { name: "Login", href: "/login" },
 ];
 
 interface NavItemProps {
   children: React.ReactNode;
   href?: string;
+  active?: boolean;
+  onClick?: () => void;
 }
 
-function NavItem({ children, href }: NavItemProps) {
-  const isExternal = href?.startsWith("http");
+function NavItem({ children, href, active, onClick }: NavItemProps) {
   return (
     <li>
-      <a
-        href={href || "#"}
-        target={isExternal ? "_blank" : "_self"}
-        className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
+      <Link
+        href={href || "/"}
+        onClick={onClick}
+        className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+          active
+            ? "text-gray-900 dark:text-gray-100"
+            : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+        }`}
       >
         {children}
-      </a>
+      </Link>
     </li>
   );
 }
@@ -41,15 +49,7 @@ function NavItem({ children, href }: NavItemProps) {
 export function Navbar() {
   const [open, setOpen] = React.useState(false);
   const [isDark, setIsDark] = React.useState(false);
-
-  const handleAsk = () => {
-    const input = document.getElementById("faq-question");
-    input?.scrollIntoView({ behavior: "smooth", block: "center" });
-    if (input instanceof HTMLInputElement) {
-      input.focus();
-    }
-    setOpen(false);
-  };
+  const pathname = usePathname();
 
   const handleOpen = () => setOpen((cur) => !cur);
 
@@ -79,14 +79,14 @@ export function Navbar() {
     <MTNavbar shadow={false} fullWidth className="border-0 sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
       <div className="container mx-auto flex items-center justify-between py-3">
         <a
-          href="#home"
+          href="/"
           className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100"
         >
           UniFAQ AI
         </a>
         <ul className="ml-8 hidden items-center gap-6 lg:flex">
           {NAV_MENU.map(({ name, href }) => (
-            <NavItem key={name} href={href}>
+            <NavItem key={name} href={href} active={pathname === href}>
               {name}
             </NavItem>
           ))}
@@ -104,20 +104,11 @@ export function Navbar() {
               <MoonIcon className="h-5 w-5 text-gray-700" />
             )}
           </IconButton>
-          <Button
-            as="a"
-            href="/admin"
-            variant="text"
-            className="text-sm"
-          >
+          <Button as="a" href="/admin" variant="text" className="text-sm">
             Admin Login
           </Button>
-          <Button
-            color="gray"
-            onClick={handleAsk}
-            className="shadow-none text-sm px-4"
-          >
-            Ask a Question
+          <Button as="a" href="/#home" color="gray" className="shadow-none text-sm px-4">
+            Ask AI
           </Button>
         </div>
         <IconButton
@@ -137,7 +128,7 @@ export function Navbar() {
         <div className="container mx-auto mt-3 border-t border-gray-200 px-2 pt-4">
           <ul className="flex flex-col gap-4">
             {NAV_MENU.map(({ name, href }) => (
-              <NavItem key={name} href={href}>
+              <NavItem key={name} href={href} active={pathname === href} onClick={() => setOpen(false)}>
                 {name}
               </NavItem>
             ))}
@@ -162,8 +153,8 @@ export function Navbar() {
             >
               Admin Login
             </Button>
-            <Button color="gray" onClick={handleAsk}>
-              Ask a Question
+            <Button as="a" href="/#home" color="gray" onClick={() => setOpen(false)}>
+              Ask AI
             </Button>
           </div>
         </div>

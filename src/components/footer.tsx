@@ -1,10 +1,11 @@
 const CURRENT_YEAR = new Date().getFullYear();
 const LINKS = [
+  { label: "Home", href: "/" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+  { label: "Login", href: "/login" },
   { label: "Privacy", href: "https://christuniversity.in/privacy-policy" },
-  { label: "Accessibility", href: "https://christuniversity.in/" },
-  { label: "Support", href: "mailto:mail@christuniversity.in" },
-  { label: "Status", href: "https://christuniversity.in/news" },
-  { label: "Contact", href: "mailto:mail@christuniversity.in" },
+  { label: "Support Email", href: "mailto:mail@christuniversity.in" },
 ];
 
 export function Footer() {
@@ -12,10 +13,7 @@ export function Footer() {
     <footer className="border-t border-gray-200 dark:border-gray-800 section-pad">
       <div className="container mx-auto flex flex-col gap-6 py-10 md:flex-row md:items-center md:justify-between">
         <div>
-          <a
-            href="#home"
-            className="text-gray-900 dark:text-gray-100"
-          >
+          <a href="/" className="text-gray-900 dark:text-gray-100">
             UniFAQ AI
           </a>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">

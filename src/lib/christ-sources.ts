@@ -21,9 +21,25 @@ type SourceCacheEntry = {
   expiresAt: number;
 };
 
-const SOURCE_CACHE_TTL_MS = 15 * 60 * 1000;
+const DEFAULT_SOURCE_CACHE_TTL_MS = 15 * 60 * 1000;
+const parseTtlMs = (value: string | undefined) => {
+  if (!value) return DEFAULT_SOURCE_CACHE_TTL_MS;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_SOURCE_CACHE_TTL_MS;
+  return Math.floor(parsed);
+};
+
+const SOURCE_CACHE_TTL_MS = parseTtlMs(process.env.SOURCE_CACHE_TTL_MS);
 const sourceTextCache = new Map<string, SourceCacheEntry>();
 const inflightSourceRequests = new Map<string, Promise<string>>();
+
+export function getSourceCacheDiagnostics() {
+  return {
+    ttlMs: SOURCE_CACHE_TTL_MS,
+    cachedEntries: sourceTextCache.size,
+    inflightRequests: inflightSourceRequests.size,
+  };
+}
 
 const decodeHtmlEntities = (text: string) =>
   text
