@@ -1,5 +1,4 @@
 "use client";
-import { Typography } from "@material-tailwind/react";
 import ArticleCard from "@/components/article-card";
 
 const ARTICLES = [
@@ -22,16 +21,13 @@ export function Articles() {
     <section id="how-it-works" className="section-pad">
       <div className="container mx-auto max-w-6xl py-12">
         <div className="max-w-3xl">
-          <Typography variant="h2" color="blue-gray">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             How the AI FAQ works
-          </Typography>
-          <Typography
-            variant="lead"
-            className="my-2 w-full font-normal !text-gray-500 dark:!text-gray-300"
-          >
+          </h2>
+          <p className="my-2 w-full text-lg font-normal text-gray-500 dark:text-gray-300">
             Built for students, backed by verified sources, and designed to reduce
             wait times for campus support.
-          </Typography>
+          </p>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">

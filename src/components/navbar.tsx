@@ -1,12 +1,16 @@
 import React from "react";
 import {
-  Navbar as MTNavbar,
-  Collapse,
-  Button,
-  IconButton,
-  Typography,
+  Navbar as MTNavbarBase,
+  Collapse as CollapseBase,
+  Button as ButtonBase,
+  IconButton as IconButtonBase,
 } from "@material-tailwind/react";
 import { XMarkIcon, Bars3Icon, SunIcon, MoonIcon } from "@heroicons/react/24/solid";
+
+const MTNavbar = MTNavbarBase as any;
+const Collapse = CollapseBase as any;
+const Button = ButtonBase as any;
+const IconButton = IconButtonBase as any;
 
 const NAV_MENU = [
   { name: "Home", href: "#home" },
@@ -23,16 +27,13 @@ function NavItem({ children, href }: NavItemProps) {
   const isExternal = href?.startsWith("http");
   return (
     <li>
-      <Typography
-        as="a"
+      <a
         href={href || "#"}
         target={isExternal ? "_blank" : "_self"}
-        variant="paragraph"
-        color="gray"
         className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
       >
         {children}
-      </Typography>
+      </a>
     </li>
   );
 }
@@ -77,14 +78,12 @@ export function Navbar() {
   return (
     <MTNavbar shadow={false} fullWidth className="border-0 sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur border-b border-gray-200 dark:border-gray-800">
       <div className="container mx-auto flex items-center justify-between py-3">
-        <Typography
-          as="a"
+        <a
           href="#home"
-          color="blue-gray"
           className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100"
         >
           UniFAQ AI
-        </Typography>
+        </a>
         <ul className="ml-8 hidden items-center gap-6 lg:flex">
           {NAV_MENU.map(({ name, href }) => (
             <NavItem key={name} href={href}>
@@ -107,7 +106,7 @@ export function Navbar() {
           </IconButton>
           <Button
             as="a"
-            href="mailto:mail@christuniversity.in"
+            href="/admin"
             variant="text"
             className="text-sm"
           >
@@ -158,7 +157,7 @@ export function Navbar() {
             </IconButton>
             <Button
               as="a"
-              href="mailto:mail@christuniversity.in"
+              href="/admin"
               variant="text"
             >
               Admin Login

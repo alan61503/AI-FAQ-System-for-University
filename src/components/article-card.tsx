@@ -1,8 +1,10 @@
 import {
-  Typography,
-  Card,
-  CardBody,
+  Card as CardBase,
+  CardBody as CardBodyBase,
 } from "@material-tailwind/react";
+
+const Card = CardBase as any;
+const CardBody = CardBodyBase as any;
 
 
 interface ArticleCardProps {
@@ -17,12 +19,12 @@ interface ArticleCardProps {
         shadow={false}
       >
         <CardBody>
-          <Typography variant="h5" color="blue-gray" className="mb-2 dark:text-gray-100">
+          <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100">
             {title}
-          </Typography>
-          <Typography variant="paragraph" className="font-normal !text-gray-500 dark:!text-gray-300">
+          </h3>
+          <p className="font-normal text-gray-500 dark:text-gray-300">
             {desc}
-          </Typography>
+          </p>
         </CardBody>
       </Card>
     );

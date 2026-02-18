@@ -1,9 +1,11 @@
 import React from "react";
 import {
-  Typography,
-  Card,
-  CardBody,
+  Card as CardBase,
+  CardBody as CardBodyBase,
 } from "@material-tailwind/react";
+
+const Card = CardBase as any;
+const CardBody = CardBodyBase as any;
 
 
 interface BlogPostCardProps {
@@ -27,26 +29,22 @@ export function BlogPostCard({
       className="border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 rounded-2xl transition-transform hover:-translate-y-0.5"
     >
       <CardBody className="p-6">
-        <Typography variant="small" color="blue" className="mb-2 !font-medium">
+        <p className="mb-2 text-sm font-medium text-blue-700 dark:text-blue-300">
           {tag}
-        </Typography>
-        <Typography
-          variant="h5"
-          color="blue-gray"
-          className="mb-2 normal-case transition-colors hover:text-gray-900 dark:text-gray-100"
+        </p>
+        <h3
+          className="mb-2 text-xl font-semibold normal-case transition-colors hover:text-gray-900 dark:text-gray-100"
         >
           {title}
-        </Typography>
-        <Typography className="mb-6 font-normal !text-gray-500 dark:!text-gray-300">
+        </h3>
+        <p className="mb-6 font-normal text-gray-500 dark:text-gray-300">
           {desc}
-        </Typography>
-        <Typography
-          variant="small"
-          color="gray"
-          className="text-xs !text-gray-500 dark:!text-gray-400 font-normal"
+        </p>
+        <p
+          className="text-xs font-normal text-gray-500 dark:text-gray-400"
         >
           {author.name} · {date}
-        </Typography>
+        </p>
       </CardBody>
     </Card>
   );
