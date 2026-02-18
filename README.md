@@ -176,6 +176,54 @@ Lists available models from Gemini API.
 - `npm run start` — run production server
 - `npm run lint` — run lint checks
 
+## Continuous Integration
+
+- GitHub Actions workflow: `.github/workflows/ci.yml`
+- Triggers on pushes and pull requests to `main`
+- Runs:
+	- `npm ci`
+	- `npm run lint`
+	- `npm run build`
+
+## Vercel Deployment (GitHub Actions)
+
+- Workflow: `.github/workflows/vercel.yml`
+- Behavior:
+	- Pull Request to `main` (same-repo branch): deploys a **Preview** build
+	- Push to `main`: deploys **Production**
+
+### Required GitHub Repository Secrets
+
+Add these in GitHub → **Settings** → **Secrets and variables** → **Actions**:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+### How to get Vercel values
+
+1. Install and login locally:
+
+```bash
+npm i -g vercel
+vercel login
+```
+
+2. Link this repo to your Vercel project (run in project root):
+
+```bash
+vercel link
+```
+
+3. Read values from `.vercel/project.json`:
+
+- `orgId` → `VERCEL_ORG_ID`
+- `projectId` → `VERCEL_PROJECT_ID`
+
+4. Create token from Vercel dashboard:
+
+- Vercel → **Settings** → **Tokens** → create token → use as `VERCEL_TOKEN`
+
 ## Troubleshooting
 
 - `GEMINI_API_KEY is not set`:
