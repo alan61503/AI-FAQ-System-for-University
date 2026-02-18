@@ -1,5 +1,6 @@
 "use client";
 import BlogPostCard from "@/components/blog-post-card";
+import Image from "next/image";
 
 
 const POSTS = [
@@ -61,28 +62,52 @@ const POSTS = [
 
 export function Posts() {
   return (
-    <section id="categories" className="section-pad">
-      <div className="container mx-auto max-w-6xl rounded-3xl border border-gray-200 bg-white px-6 pt-12 pb-8 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:px-8">
-        <div className="text-center">
-        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Explore FAQ Categories
-        </h3>
-        <h2 className="mb-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
-          Everything students ask—organized for speed
-        </h2>
-        <p className="mx-auto mb-10 max-w-3xl text-lg text-gray-500 dark:text-gray-300">
-          Browse curated knowledge areas or ask the AI directly. Each category
-          is kept up to date by university offices.
-        </p>
-        <div className="mx-auto mb-10 max-w-xl rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-          <img
-            src="/image/illustrations/undraw_too-many-options_lpt0.svg"
-            alt="FAQ categories"
-            className="h-auto w-full"
-          />
+    <section id="categories" className="section-pad mt-6 md:mt-8">
+      <div className="container mx-auto max-w-7xl rounded-[2rem] border border-gray-200 bg-white px-6 py-10 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:px-10 md:py-12">
+        <div className="grid items-center gap-8 md:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <p className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+              Explore FAQ Categories
+            </p>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 md:text-4xl">
+              Everything students ask, organized for quick answers
+            </h2>
+            <p className="mt-3 max-w-2xl text-lg text-gray-600 dark:text-gray-300">
+              Browse focused knowledge areas, then ask the AI with better context.
+              Each category is aligned with university support workflows.
+            </p>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                "Admissions",
+                "Academics",
+                "Examinations",
+                "Finance",
+                "Campus Life",
+                "IT Support",
+              ].map((label) => (
+                <span
+                  key={label}
+                  className="rounded-full border border-gray-300 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mx-auto w-full max-w-md rounded-2xl border border-gray-200 bg-gradient-to-br from-slate-50 to-blue-50 p-4 dark:border-gray-700 dark:from-gray-800 dark:to-slate-900">
+            <Image
+              src="/image/illustrations/undraw_too-many-options_lpt0.svg"
+              alt="FAQ categories"
+              width={620}
+              height={420}
+              className="h-auto w-full"
+            />
+          </div>
         </div>
-        </div>
-        <div className="grid grid-cols-1 gap-6 pb-4 lg:grid-cols-3">
+
+        <div className="mt-10 grid grid-cols-1 gap-6 pb-1 md:grid-cols-2 xl:grid-cols-3">
           {POSTS.map(({ tag, title, desc, date, author }) => (
             <BlogPostCard
               key={title}

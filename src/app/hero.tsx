@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { Button as MTButton, Input as MTInput } from "@material-tailwind/react";
+import Image from "next/image";
 
 const Button = MTButton as any;
 const Input = MTInput as any;
@@ -27,6 +28,14 @@ const QUICK_PROMPTS = [
   "How can I request official transcripts?",
 ];
 
+const INTRO_TEXT = "Hi, I'm UniFAQ.";
+const TYPEWRITER_SUGGESTIONS = [
+  "admissions and deadlines?",
+  "exam schedules and rules?",
+  "fees and scholarships?",
+  "hostel and campus services?",
+];
+
 function Hero() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -38,8 +47,55 @@ function Hero() {
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [introTyped, setIntroTyped] = useState("");
+  const [introDone, setIntroDone] = useState(false);
+  const [typedQuestionPart, setTypedQuestionPart] = useState("");
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [isDeletingSuggestion, setIsDeletingSuggestion] = useState(false);
 
   const confidencePercent = confidence !== null ? Math.round(confidence * 100) : null;
+
+  useEffect(() => {
+    if (introDone) return;
+
+    const timeout = window.setTimeout(() => {
+      if (introTyped.length < INTRO_TEXT.length) {
+        setIntroTyped(INTRO_TEXT.slice(0, introTyped.length + 1));
+        return;
+      }
+      setIntroDone(true);
+    }, 70);
+
+    return () => window.clearTimeout(timeout);
+  }, [introDone, introTyped]);
+
+  useEffect(() => {
+    if (!introDone) return;
+
+    const currentSuggestion = TYPEWRITER_SUGGESTIONS[suggestionIndex];
+    let timeout = 0;
+
+    if (!isDeletingSuggestion && typedQuestionPart === currentSuggestion) {
+      timeout = window.setTimeout(() => setIsDeletingSuggestion(true), 1200);
+    } else if (isDeletingSuggestion && typedQuestionPart.length === 0) {
+      timeout = window.setTimeout(() => {
+        setIsDeletingSuggestion(false);
+        setSuggestionIndex(
+          (index) => (index + 1) % TYPEWRITER_SUGGESTIONS.length
+        );
+      }, 220);
+    } else {
+      timeout = window.setTimeout(() => {
+        if (isDeletingSuggestion) {
+          setTypedQuestionPart(currentSuggestion.slice(0, typedQuestionPart.length - 1));
+        } else {
+          setTypedQuestionPart(currentSuggestion.slice(0, typedQuestionPart.length + 1));
+        }
+      }, isDeletingSuggestion ? 40 : 65);
+    }
+
+    return () => window.clearTimeout(timeout);
+  }, [introDone, isDeletingSuggestion, suggestionIndex, typedQuestionPart]);
 
   const fillPrompt = (value: string) => {
     setQuestion(value);
@@ -125,22 +181,28 @@ function Hero() {
   };
 
   return (
-    <header id="home" className="section-pad pt-8 md:pt-10">
-      <div className="container mx-auto max-w-6xl pb-10">
-        <div className="grid gap-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:grid-cols-2 md:p-10">
-          <div>
+    <header id="home" className="section-pad pt-8 md:pt-12">
+      <div className="container mx-auto max-w-7xl pb-12">
+        <div className="relative overflow-hidden rounded-[2rem] border border-gray-200 bg-gradient-to-br from-white via-slate-50 to-blue-50 p-6 shadow-sm dark:border-gray-800 dark:from-gray-900 dark:via-gray-900 dark:to-slate-900 md:p-10 lg:p-12">
+          <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-100/70 blur-3xl dark:bg-slate-700/40" />
+          <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-slate-200/70 blur-3xl dark:bg-slate-800/50" />
+
+          <div className="relative grid items-center gap-8 md:grid-cols-[1.25fr_0.85fr] lg:min-h-[520px] lg:gap-12">
+          <div className="max-w-2xl">
             <p className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
               Smart Student Support
             </p>
-            <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100 md:text-5xl">
-              Better answers. Faster campus support.
+            <h1 className="mt-5 min-h-[56px] text-4xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-100 md:min-h-[72px] md:text-5xl lg:text-6xl">
+              <span className="font-mono">{introTyped}</span>
+              <span className="ml-1 inline-block w-[10px] animate-pulse font-mono">|</span>
             </h1>
-            <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-              Ask anything about admissions, academics, exams, fees, and campus life.
-              UniFAQ AI retrieves source-backed answers from official university websites.
+            <p className="mt-3 min-h-[56px] text-lg leading-8 text-gray-600 dark:text-gray-300 md:min-h-[64px]">
+              <span className="font-medium">How can I help you with </span>
+              <span className="font-mono text-gray-900 dark:text-gray-100">{typedQuestionPart}</span>
+              <span className="ml-1 inline-block w-[8px] animate-pulse font-mono">|</span>
             </p>
 
-            <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+            <div className="mt-6 rounded-2xl border border-gray-200 bg-white/90 p-4 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/80 md:p-5">
               <div className="flex flex-col gap-3 sm:flex-row">
                 <div className="w-full">
                   <Input
@@ -167,7 +229,7 @@ function Hero() {
                 </Button>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 {QUICK_PROMPTS.map((item) => (
                   <button
                     key={item}
@@ -181,24 +243,27 @@ function Hero() {
               </div>
             </div>
 
-            <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+            <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
               No login required. Updated by university offices.
             </p>
 
             {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
           </div>
 
-          <div className="flex items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-            <img
+          <div className="mx-auto flex w-full max-w-[360px] items-center justify-center rounded-2xl border border-gray-200 bg-white/90 p-4 backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/80 md:max-w-[420px] md:p-6">
+            <Image
               src="/image/illustrations/undraw_faq_pgxi.svg"
               alt="FAQ assistant illustration"
-              className="h-auto w-full max-w-md"
+              width={560}
+              height={420}
+              className="h-auto w-full max-w-[260px] md:max-w-[320px] lg:max-w-[360px]"
             />
           </div>
         </div>
+        </div>
 
         {answer ? (
-          <div className="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="mt-8 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <div className="flex flex-col gap-3 border-b border-gray-200 pb-4 dark:border-gray-700 md:flex-row md:items-center md:justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 AI Response

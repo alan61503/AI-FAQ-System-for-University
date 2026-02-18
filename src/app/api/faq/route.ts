@@ -9,6 +9,7 @@ import { getUserDataContext, USER_DATA_SOURCE_LABEL } from "@/lib/user-data";
 
 const apiKey = process.env.GEMINI_API_KEY;
 const debugFromEnv = process.env.DEBUG === "true";
+const INTERNAL_KB_SOURCE_LABEL = "Internal Knowledge Base";
 
 const isTruthyDebugParam = (value: string | null) => {
   if (!value) return false;
@@ -30,6 +31,17 @@ type FaqResponse = {
 
 const clampConfidence = (value: number) =>
   Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.4;
+
+const sanitizeFallbackAnswer = (text: string) =>
+  text
+    .replace(/\bSample\s*data\s*:?\s*/gi, "")
+    .replace(/\bmock\s+faq\s+dataset\b/gi, INTERNAL_KB_SOURCE_LABEL)
+    .trim();
+
+const normalizeCitationLabel = (label: string) => {
+  if (/mock/i.test(label)) return INTERNAL_KB_SOURCE_LABEL;
+  return label.trim();
+};
 
 const parseModelJson = (raw: string) => {
   const match = raw.match(/\{[\s\S]*\}/);
@@ -54,7 +66,7 @@ const parseModelJson = (raw: string) => {
             if (!item || typeof item !== "object") return [];
             const label =
               "label" in item && typeof item.label === "string"
-                ? item.label.trim()
+                ? normalizeCitationLabel(item.label)
                 : "";
             const url =
               "url" in item && typeof item.url === "string" && item.url.trim()
@@ -94,30 +106,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const mockHit = searchMockFaqs(question);
-  if (mockHit) {
-    const citations: Citation[] = [{ label: "Mock FAQ Dataset" }];
-    const payload: Record<string, unknown> = {
-      answer: mockHit.answer,
-      confidence: 0.55,
-      citations,
-      sources: citations.map((item) => item.label),
-    };
-
-    if (debugEnabled) {
-      payload.debug = {
-        scraperCache: getSourceCacheDiagnostics(),
-        retrieval: {
-          officialChunkCount: 0,
-          officialCitationCount: 0,
-          usedMockFallback: true,
-          usedUserData: false,
-        },
-      };
-    }
-
-    return NextResponse.json(payload);
-  }
+  const directMockHit = searchMockFaqs(question);
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -142,7 +131,7 @@ export async function POST(request: Request) {
     const mockContextItems = rankMockFaqs(question, 5)
       .map(
         (item, idx) =>
-          `Mock ${idx + 1}: Q: ${item.question}\nA: ${item.answer}`
+          `Knowledge ${idx + 1}: Q: ${item.question}\nA: ${sanitizeFallbackAnswer(item.answer)}`
       )
       .join("\n\n");
 
@@ -157,7 +146,7 @@ export async function POST(request: Request) {
       .map((item) => item.url)
       .filter((url): url is string => Boolean(url));
 
-    const prompt = `You are a Christ University FAQ assistant. Use the provided official sources first. If they do not contain the answer, you may use the user-provided dataset. If still unavailable, you may use the mock FAQ snippets as a fallback.\n\nRules:\n- Return only valid JSON (no markdown, no extra text).\n- JSON shape: {"answer": string, "confidence": number, "citations": Array<{"label": string, "url"?: string}>}.\n- confidence must be a number between 0 and 1.\n- Keep answer concise, accurate, and in plain text.\n- Only claim a detail is in official sources if explicitly present in source text.\n- If data is missing, clearly say it is not available in the provided sources and suggest contacting the relevant office.\n\nCandidate official citation URLs:\n${candidateOfficialUrls.join("\n") || "No official URLs available."}\n\nOfficial Sources:\n${context || "No sources available."}\n\nUser Data:\n${userDataContext || "No user data available."}\n\nMock FAQs:\n${mockContextItems || "No mock FAQs available."}\n\nQuestion: ${question}`;
+    const prompt = `You are a Christ University FAQ assistant. Use the provided official sources first. If they do not contain the answer, you may use the user-provided dataset. If still unavailable, you may use internal knowledge snippets as a fallback.\n\nRules:\n- Return only valid JSON (no markdown, no extra text).\n- JSON shape: {"answer": string, "confidence": number, "citations": Array<{"label": string, "url"?: string}>}.\n- confidence must be a number between 0 and 1.\n- Keep answer concise, accurate, and in plain text.\n- Do not mention internal fallback strategy or synthetic/mocked wording in the final answer.\n- Only claim a detail is in official sources if explicitly present in source text.\n- If data is missing, clearly say it is not available in the provided sources and suggest contacting the relevant office.\n\nCandidate official citation URLs:\n${candidateOfficialUrls.join("\n") || "No official URLs available."}\n\nOfficial Sources:\n${context || "No sources available."}\n\nUser Data:\n${userDataContext || "No user data available."}\n\nInternal Knowledge Snippets:\n${mockContextItems || "No internal knowledge snippets available."}\n\nQuestion: ${question}`;
 
     const result = await model.generateContent(prompt);
     const response = result.response;
@@ -172,21 +161,33 @@ export async function POST(request: Request) {
       fallbackCitations.push({ label: USER_DATA_SOURCE_LABEL });
     }
     if (fallbackCitations.length === 0 && mockContextItems) {
-      fallbackCitations.push({ label: "Mock FAQ Dataset" });
+      fallbackCitations.push({ label: INTERNAL_KB_SOURCE_LABEL });
     }
 
+    const finalAnswer =
+      sanitizeFallbackAnswer(
+        parsed?.answer ||
+          text ||
+          (directMockHit?.answer ?? "I could not generate an answer right now.")
+      );
+
     const payload: FaqResponse = {
-      answer: parsed?.answer || text || "I could not generate an answer right now.",
+      answer: finalAnswer,
       confidence:
         parsed?.confidence ??
         (rankedOfficialCitations.length > 0
           ? 0.78
           : userDataContext
             ? 0.68
-            : mockContextItems
+            : directMockHit || mockContextItems
               ? 0.52
               : 0.4),
-      citations: parsed?.citations?.length ? parsed.citations : fallbackCitations,
+      citations: (parsed?.citations?.length ? parsed.citations : fallbackCitations).map(
+        (item) => ({
+          label: normalizeCitationLabel(item.label),
+          url: item.url,
+        })
+      ),
       sources: [],
     };
 
@@ -200,8 +201,8 @@ export async function POST(request: Request) {
         retrieval: {
           officialChunkCount: rankedSourceChunks.length,
           officialCitationCount: rankedOfficialCitations.length,
-          usedMockFallback: fallbackCitations.some(
-            (item) => item.label === "Mock FAQ Dataset"
+          usedInternalFallback: fallbackCitations.some(
+            (item) => item.label === INTERNAL_KB_SOURCE_LABEL
           ),
           usedUserData: Boolean(userDataContext),
         },

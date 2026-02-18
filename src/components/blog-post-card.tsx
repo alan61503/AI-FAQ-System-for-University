@@ -28,7 +28,7 @@ export function BlogPostCard({
   return (
     <Card
       shadow={false}
-      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all hover:-translate-y-0.5 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900"
+      className="group overflow-hidden rounded-2xl border border-gray-200 bg-gradient-to-b from-white to-gray-50/80 transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-gray-900"
     >
       {illustration ? (
         <div className="flex h-40 items-center justify-center border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800">
@@ -40,7 +40,7 @@ export function BlogPostCard({
         </div>
       ) : null}
       <CardBody className="p-6">
-        <p className="mb-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+        <p className="mb-3 inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:border-blue-900 dark:bg-blue-900/20 dark:text-blue-300">
           {tag}
         </p>
         <h3
@@ -48,12 +48,10 @@ export function BlogPostCard({
         >
           {title}
         </h3>
-        <p className="mb-6 min-h-[72px] font-normal text-gray-600 dark:text-gray-300">
+        <p className="mb-6 min-h-[84px] font-normal leading-7 text-gray-600 dark:text-gray-300">
           {desc}
         </p>
-        <p
-          className="text-xs font-normal text-gray-500 dark:text-gray-400"
-        >
+        <p className="border-t border-gray-200 pt-3 text-xs font-medium text-gray-500 dark:border-gray-800 dark:text-gray-400">
           {author.name} · {date}
         </p>
       </CardBody>
