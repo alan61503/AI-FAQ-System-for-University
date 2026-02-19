@@ -3,6 +3,7 @@ import {
   Card as CardBase,
   CardBody as CardBodyBase,
 } from "@material-tailwind/react";
+import Image from "next/image";
 
 const Card = CardBase as any;
 const CardBody = CardBodyBase as any;
@@ -32,9 +33,12 @@ export function BlogPostCard({
     >
       {illustration ? (
         <div className="flex h-40 items-center justify-center border-b border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-800">
-          <img
+          <Image
             src={illustration}
             alt={title}
+            width={640}
+            height={360}
+            unoptimized
             className="h-full w-full object-contain"
           />
         </div>
